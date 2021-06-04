@@ -21,11 +21,11 @@ namespace Tenrec
         {
             if (!Initialized)
             {
-                System.Windows.Forms.MessageBox.Show("1");
+                //System.Windows.Forms.MessageBox.Show("1");
                 AppDomain.CurrentDomain.AssemblyResolve += ResolveAssemblies;
                 _rhinoCore = new Rhino.Runtime.InProcess.RhinoCore();
                 Initialized = true;
-                System.Windows.Forms.MessageBox.Show("Initialize");
+                //System.Windows.Forms.MessageBox.Show("Initialize");
             }
         }
 
@@ -37,7 +37,7 @@ namespace Tenrec
                 _rhinoCore.Dispose();
                 _rhinoCore = null; 
                 Initialized = false;
-                System.Windows.Forms.MessageBox.Show("Dispose");
+                //System.Windows.Forms.MessageBox.Show("Dispose");
             }
         }
 
