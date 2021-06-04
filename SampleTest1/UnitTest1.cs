@@ -12,7 +12,7 @@ namespace SampleTest1
         [TestMethod]
         public void TestMethod1()
         {
-            Tenrec.Utils.RunTenrecGroup(@"C:\Users\Dani Gonzalez\Desktop\New folder (2)\PorcupineSAMPLETest.gh",
+            Tenrec.Utils.RunTenrecGroup(System.IO.Path.Combine(System.IO.Directory.GetParent(typeof(Tenrec.Utils).Assembly.Location).Parent.FullName, "TenrecSAMPLETest.gh"),
               new System.Guid("aca484d6-28a7-4fb9-88e6-0b2a4e282bbd"), TestContext);
         }
     }

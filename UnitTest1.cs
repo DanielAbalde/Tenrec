@@ -12,7 +12,7 @@ namespace Tenrec.Tests
         [TestMethod]
         public void Test_TestGroup1()
         {
-            Utils.RunTenrecGroups(@"C:\Users\Dani Gonzalez\Desktop\New folder (2)\PorcupineSAMPLETest.gh", TestContext);
+            Utils.RunTenrecGroups(System.IO.Path.Combine(System.IO.Directory.GetParent(typeof(Utils).Assembly.Location).Parent.FullName, "TenrecSAMPLETest.gh"), TestContext);
         }
         [TestMethod]
         public void Test_TestGrasshopper()
