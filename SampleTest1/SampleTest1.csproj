@@ -39,11 +39,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Eto, Version=2.5.0.0, Culture=neutral, PublicKeyToken=552281e97c755530, processorArchitecture=MSIL">
+      <HintPath>..\packages\RhinoCommon.7.6.21127.19001\lib\net48\Eto.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Eto.Wpf, Version=2.5.0.0, Culture=neutral, PublicKeyToken=552281e97c755530, processorArchitecture=MSIL">
+      <HintPath>..\packages\RhinoWindows.7.6.21127.19001\lib\net48\Eto.Wpf.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="GH_IO, Version=7.6.21127.19000, Culture=neutral, PublicKeyToken=6a29997d2e6b4f97, processorArchitecture=MSIL">
       <HintPath>..\packages\Grasshopper.7.6.21127.19001\lib\net48\GH_IO.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Grasshopper, Version=7.6.21127.19000, Culture=neutral, PublicKeyToken=dda4f5ec2cd80803, processorArchitecture=MSIL">
       <HintPath>..\packages\Grasshopper.7.6.21127.19001\lib\net48\Grasshopper.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\MSTest.TestFramework.2.2.4\lib\net45\Microsoft.VisualStudio.TestPlatform.TestFramework.dll</HintPath>
@@ -56,27 +66,27 @@
     </Reference>
     <Reference Include="Rhino.UI, Version=7.6.21127.19000, Culture=neutral, PublicKeyToken=552281e97c755530, processorArchitecture=MSIL">
       <HintPath>..\packages\RhinoCommon.7.6.21127.19001\lib\net48\Rhino.UI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="RhinoCommon, Version=7.6.21127.19000, Culture=neutral, PublicKeyToken=552281e97c755530, processorArchitecture=MSIL">
       <HintPath>..\packages\RhinoCommon.7.6.21127.19001\lib\net48\RhinoCommon.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="RhinoInside, Version=7.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Rhino.Inside.7.0.0\lib\net48\RhinoInside.dll</HintPath>
+    <Reference Include="RhinoInside">
+      <HintPath>..\..\rhino.inside\DotNet\RhinoInside\bin\Debug\net48\RhinoInside.dll</HintPath>
     </Reference>
     <Reference Include="RhinoWindows, Version=7.6.0.0, Culture=neutral, PublicKeyToken=552281e97c755530, processorArchitecture=MSIL">
       <HintPath>..\packages\RhinoWindows.7.6.21127.19001\lib\net48\RhinoWindows.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TenrecAutoTests.cs" />
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="SampleTest1UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
