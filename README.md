@@ -4,7 +4,7 @@
 This WIP plugin and workflow allows to replace unit tests written from code (as usual), by Grasshopper files, and to continue using the Test Explorer in Visual Studio.
 The plugin contains two special objects, a group that allows to gather components into a single unit test, and a component that throws an error when the test fails.
 
-![Capture Tenrec Group](.Resources/captureTenrecGroup.png)
+![Capture Tenrec Group](./Resources/captureTenrecGroup.png)
 
 ### 🗺️ Motivation
 The motivation is to automate the test code and allow to create Grasshopper definitions that can be both component unit tests and integration tests between various components. It also allows to have a better control over the data, mainly geometrical, that parameterise the tests. And above all, it avoids having to open Rhino + Grasshopper + Document to debug a plugin.
