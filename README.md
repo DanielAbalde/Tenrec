@@ -20,7 +20,7 @@ For the moment the Unit Test Source Code Generator is just for Windows and just 
 
 ##### Install Tenrec.gha
 
-1. Download from...
+1. Download last release from https://github.com/DanielAbalde/Tenrec/releases.
 2. Paste Tenrec.gha in _C:\Users\<YOUR USERNAME>\AppData\Roaming\Grasshopper\Libraries_.
 3. Restart Rhinoceros and Grasshopper.
 4. Find _Tenrec_ group and _Assert_ component in _Params > Util_.
