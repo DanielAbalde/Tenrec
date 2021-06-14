@@ -2,7 +2,7 @@
 using Grasshopper;
 using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
-using Grasshopper.Kernel; 
+using Grasshopper.Kernel;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -12,53 +12,27 @@ using System.Windows.Forms;
 using Tenrec.UI;
 
 namespace Tenrec.Components
-{
-    // TODO MAKE MENU OPT STATIC TO ALL GROUPS
-    // double click create panel
-
-    public enum UnitTestState { Untested = -1, Failure = 0, Valid = 1 }
-
-    public class ObjectMessage
-    {
-        public RectangleF Bounds { get; set; }
-        public string Name { get; private set; }
-        public GH_RuntimeMessageLevel Level { get; set; }
-        public IList<string> Messages { get; set; }
-        public IGH_DocumentObject Object { get; set; }
-
-        public ObjectMessage(string name, GH_RuntimeMessageLevel level, IList<string> messages, IGH_DocumentObject obj)
-        {
-            Name = name;
-            Level = level;
-            Messages = messages;
-            Object = obj;
-        }
-
-        public override string ToString()
-        {
-            var txt = $"{Level} on {Name}! {string.Join(", ", Messages)}";
-            if (!char.IsPunctuation(txt[txt.Length - 1]))
-                txt = string.Concat(txt, ".");
-            return txt;
-        }
-    }
-
+{    
     public class Group_UnitTest : Grasshopper.Kernel.Special.GH_Group
     {
         #region Fields
-        private UnitTestState _state; 
+        private UnitTestState _state;
         private List<ObjectMessage> _log = new List<ObjectMessage>();
         private bool _solving;
+
+        private static bool? _ignoreWarnings;
+        private static bool? _ignoreRemarks;
+        private static bool? _disableCanvasMessages;
         #endregion
 
         #region Properties  
-        protected override Bitmap Icon => base.Icon;
+        protected override Bitmap Icon => Properties.Resources.test_24x24;
         public static Guid ID => new Guid("bd91ba09-773f-4950-b440-2d8e39a77f68");
         public override Guid ComponentGuid => ID;
         public override GH_Exposure Exposure => GH_Exposure.tertiary;
         public UnitTestState State => _state;
         public override string InstanceDescription => string.Join(Environment.NewLine, Log);
-    
+
         public IEnumerable<ObjectMessage> Log
         {
             get
@@ -69,9 +43,57 @@ namespace Tenrec.Components
             }
         }
 
-        public bool IgnoreWarnings { get; set; }
-        public bool IgnoreRemarks { get; set; }
-        public bool DisableCanvasMessages { get; set; }
+        public static bool IgnoreWarnings
+        {
+            get
+            {
+                if (_ignoreWarnings == null)
+                    _ignoreWarnings = Grasshopper.Instances.Settings.GetValue("Tenrec.IgnoreWarnings", false);
+                return _ignoreWarnings ?? false;
+            }
+            set
+            {
+                if(_ignoreWarnings ==null || _ignoreWarnings != value)
+                {
+                    _ignoreWarnings = value;
+                    Grasshopper.Instances.Settings.SetValue("Tenrec.IgnoreWarnings", value);
+                }
+            }
+        }
+        public static bool IgnoreRemarks
+        {
+            get
+            {
+                if (_ignoreRemarks == null)
+                    _ignoreRemarks = Grasshopper.Instances.Settings.GetValue("Tenrec.IgnoreRemarks", true);
+                return _ignoreRemarks ?? true;
+            }
+            set
+            {
+                if (_ignoreRemarks == null || _ignoreRemarks != value)
+                {
+                    _ignoreRemarks = value;
+                    Grasshopper.Instances.Settings.SetValue("Tenrec.IgnoreRemarks", value);
+                }
+            }
+        }
+        public static bool DisableCanvasMessages
+        {
+            get
+            {
+                if (_disableCanvasMessages == null)
+                    _disableCanvasMessages = Grasshopper.Instances.Settings.GetValue("Tenrec.DisableCanvasMessages", false);
+                return _disableCanvasMessages ?? false;
+            }
+            set
+            {
+                if (_disableCanvasMessages == null || _disableCanvasMessages != value)
+                {
+                    _disableCanvasMessages = value;
+                    Grasshopper.Instances.Settings.SetValue("Tenrec.DisableCanvasMessages", value);
+                }
+            }
+        }
         #endregion
 
         #region Constructors
@@ -92,7 +114,7 @@ namespace Tenrec.Components
             _state = UnitTestState.Untested;
             _log.Clear();
             CanvasLog.Instance?.Clear();
-        } 
+        }
         public void Compute()
         {
             var doc = OnPingDocument();
@@ -104,7 +126,7 @@ namespace Tenrec.Components
                 foreach (var obj in Objects())
                     obj.ExpireSolution(false);
             });
-            
+
         }
         public void Update()
         {
@@ -113,7 +135,7 @@ namespace Tenrec.Components
                 _solving = false;
                 Reset();
 
-                _state = Utils.EvaluateGroup(this, out _log);
+                _state = EvaluateGroup(this, out _log);
 
                 if (!DisableCanvasMessages)
                 {
@@ -122,20 +144,56 @@ namespace Tenrec.Components
                         CanvasLog.Instance.WriteLine($"[{NickName}] {log}", 3000);
                     }
                 }
-              
+
                 Attributes.ExpireLayout();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 _log.Add(new ObjectMessage(Name, GH_RuntimeMessageLevel.Error, new string[] { e.ToString() }, this));
-            } 
+            }
+        }
+
+        public static UnitTestState EvaluateGroup(Grasshopper.Kernel.Special.GH_Group group,  out List<ObjectMessage> log)
+        {
+            var state = UnitTestState.Untested;
+            log = new List<ObjectMessage>();
+
+            foreach (var obj in group.Objects())
+            {
+                if (obj is Grasshopper.Kernel.IGH_ActiveObject aobj)
+                {
+                    aobj.CollectData();
+                    aobj.ComputeData();
+                }
+            }
+
+            foreach (var obj in group.Objects())
+            {
+                if (obj is Grasshopper.Kernel.IGH_ActiveObject aobj)
+                {
+                    var level = aobj.RuntimeMessageLevel;
+                    var messages = aobj.RuntimeMessages(level);
+                    if (messages != null && messages.Count > 0)
+                    {
+                        var name = obj.NickName.Equals(obj.Name, StringComparison.OrdinalIgnoreCase) ? obj.Name : $"{obj.Name}({obj.NickName})";
+                        log.Add(new ObjectMessage(name, level, messages, obj));
+                        if ((state == UnitTestState.Untested || state == UnitTestState.Valid) &&
+                            level == Grasshopper.Kernel.GH_RuntimeMessageLevel.Error)
+                            state = UnitTestState.Failure;
+                    }
+                }
+            }
+
+            if (state == UnitTestState.Untested)
+                state = UnitTestState.Valid;
+            return state;
         }
 
         private void Doc_SolutionEnd(object sender, GH_SolutionEventArgs e)
         {
             e.Document.SolutionEnd -= Doc_SolutionEnd;
 
-            Update(); 
+            Update();
         }
 
         public override void AddedToDocument(GH_Document document)
@@ -143,7 +201,7 @@ namespace Tenrec.Components
             base.AddedToDocument(document);
             if (document.SelectedCount == 0)
             {
-                if(ObjectIDs.Count == 0)
+                if (ObjectIDs.Count == 0)
                 {
                     document.RemoveObject(this.Attributes, false);
                     CanvasLog.Instance.WriteLine("Select components before dropping a Tenrec group", 3000);
@@ -153,7 +211,7 @@ namespace Tenrec.Components
             }
             else
             {
-           
+
                 if (NickName == "Tenrec")
                 {
                     var c = document.Objects.OfType<Group_UnitTest>().Count();
@@ -161,14 +219,14 @@ namespace Tenrec.Components
                 }
                 Menu_AddToGroupHandler(null, null);
             }
-          
+
         }
 
         public override void CreateAttributes()
         {
             m_attributes = new GroupAtt_Tenrec(this);
         }
- 
+
         private void OnObjectAdded(IGH_DocumentObject obj)
         {
             obj.SolutionExpired -= Obj_SolutionExpired;
@@ -187,7 +245,7 @@ namespace Tenrec.Components
                 Reset();
                 Update();
             }
-                
+
         }
 
         #region Menu
@@ -220,11 +278,11 @@ namespace Tenrec.Components
         {
             var doc = OnPingDocument();
             if (doc != null)
-            { 
+            {
                 doc.UndoUtil.RecordRemoveObjectEvent("Ungroup", this);
                 foreach (var obj in Objects())
                     OnObjectRemoved(obj);
-                doc.RemoveObject(this, false); 
+                doc.RemoveObject(this, false);
                 Instances.InvalidateCanvas();
             }
         }
@@ -235,7 +293,7 @@ namespace Tenrec.Components
             {
                 var objs = doc.SelectedObjects()
                     .Where(o => InstanceGuid != o.InstanceGuid &&
-                    !ObjectIDs.Contains(o.InstanceGuid)); 
+                    !ObjectIDs.Contains(o.InstanceGuid));
                 if (objs != null && objs.Any())
                 {
                     RecordUndoEvent("Add to group");
@@ -244,24 +302,24 @@ namespace Tenrec.Components
                         AddObject(obj.InstanceGuid);
                         OnObjectAdded(obj);
                     }
-                     
+
                     Reset();
                     Instances.InvalidateCanvas();
-                } 
+                }
             }
         }
         private void Menu_RemoveFromGroupHandler(object sender, EventArgs e)
         {
             var doc = OnPingDocument();
-            if (doc == null) 
+            if (doc == null)
                 return;
 
             var objs = doc.SelectedObjects()
                     .Where(o => InstanceGuid != o.InstanceGuid &&
-                    ObjectIDs.Contains(o.InstanceGuid)); 
+                    ObjectIDs.Contains(o.InstanceGuid));
             if (objs != null && objs.Any())
             {
-                 if(objs.Count() == ObjectIDs.Count)
+                if (objs.Count() == ObjectIDs.Count)
                 {
                     doc.UndoUtil.RecordRemoveObjectEvent("Ungroup", this);
                     foreach (var obj in Objects())
@@ -276,9 +334,9 @@ namespace Tenrec.Components
                         OnObjectRemoved(obj);
                         RemoveObject(obj.InstanceGuid);
                     }
-                       
+
                     Reset();
-                } 
+                }
                 Instances.InvalidateCanvas();
             }
         }
@@ -287,25 +345,11 @@ namespace Tenrec.Components
         #region Serialization
         public override bool Write(GH_IWriter writer)
         {
-            writer.SetInt32(nameof(State), (int)State); 
+            writer.SetInt32(nameof(State), (int)State);
             writer.SetBoolean(nameof(IgnoreWarnings), IgnoreWarnings);
             writer.SetBoolean(nameof(IgnoreRemarks), IgnoreRemarks);
             writer.SetBoolean(nameof(DisableCanvasMessages), DisableCanvasMessages);
             return base.Write(writer);
-
-            //writer.SetInt32(nameof(State), (int)State);
-            //writer.SetInt32("ID_Count", ObjectIDs.Count);
-            //for (int i = 0; i < ObjectIDs.Count; i++)
-            //    writer.SetGuid("ID", i, ObjectIDs[i]);
-            //writer.SetBoolean(nameof(IgnoreWarnings), IgnoreWarnings);
-            //writer.SetBoolean(nameof(IgnoreRemarks), IgnoreRemarks);
-            //writer.SetBoolean(nameof(DisableCanvasMessages), DisableCanvasMessages);
-
-            //writer.SetString(nameof(Name), Name);
-            //writer.SetString(nameof(NickName), NickName);
-            //writer.SetString(nameof(Description), Description);
-            //writer.SetGuid(nameof(InstanceGuid), InstanceGuid);
-            //return Attributes.Write(writer.CreateChunk(nameof(Attributes)));
         }
         public override bool Read(GH_IReader reader)
         {
@@ -314,39 +358,6 @@ namespace Tenrec.Components
             IgnoreRemarks = reader.GetBoolean(nameof(IgnoreRemarks));
             DisableCanvasMessages = reader.GetBoolean(nameof(DisableCanvasMessages));
             return base.Read(reader);
-
-            //ExpireCaches();
-            //_state = (UnitTestState)reader.GetInt32(nameof(State));
-            //ObjectIDs.Clear();
-            //int cnt = reader.GetInt32("ID_Count");
-            //for (int i = 0; i < cnt; i++)
-            //    ObjectIDs.Add(reader.GetGuid("ID", i));
-            //IgnoreWarnings = reader.GetBoolean(nameof(IgnoreWarnings));
-            //IgnoreRemarks = reader.GetBoolean(nameof(IgnoreRemarks));
-            //DisableCanvasMessages = reader.GetBoolean(nameof(DisableCanvasMessages));
-
-            //Name = reader.GetString(nameof(Name));
-            //NickName = reader.GetString(nameof(NickName));
-            //Description = reader.GetString(nameof(Description));
-            //if (reader.ItemExists(nameof(InstanceGuid)))
-            //{
-            //    NewInstanceGuid(reader.GetGuid(nameof(InstanceGuid)));
-            //}
-            //else
-            //{
-            //    NewInstanceGuid(Guid.NewGuid());
-            //}
-            //if (m_attributes != null)
-            //{
-            //    var reader2 = reader.FindChunk(nameof(Attributes));
-            //    if (reader2 != null)
-            //    {
-            //        return Attributes.Read(reader2);
-            //    }
-            //    reader.AddMessage("Attributes chunk is missing. Could be a hint something's wrong.", GH_Message_Type.info);
-            //}
-
-            //return true;
         }
         #endregion
         #endregion
@@ -355,7 +366,7 @@ namespace Tenrec.Components
         {
             #region Fields
             private readonly Group_UnitTest _owner;
-            private List<RectangleF> _cacheBoxes; 
+            private List<RectangleF> _cacheBoxes;
             private GraphicsPath _runPath;
             private RectangleF _controlBox;
             private RectangleF _titleBox;
@@ -389,7 +400,7 @@ namespace Tenrec.Components
             #region Constructors 
             public GroupAtt_Tenrec(Group_UnitTest owner) : base(owner)
             {
-                _owner = owner; 
+                _owner = owner;
             }
             ~GroupAtt_Tenrec()
             {
@@ -408,7 +419,7 @@ namespace Tenrec.Components
                 attributes.Insert(idx, this);
             }
             public override bool InvalidateCanvas(GH_Canvas canvas, GH_CanvasMouseEvent e)
-            { 
+            {
                 return _hoverRunButton || _hoverTitle || _hoverLog > -1;
             }
             public override void SetupTooltip(PointF point, GH_TooltipDisplayEventArgs e)
@@ -474,34 +485,32 @@ namespace Tenrec.Components
 
             #region Render
             protected override void Layout()
-            { 
-                var objs = _owner.Objects();
-                var ids = _owner.ObjectIDs;
+            {
               
                 var boxes = _owner.ContentBoxes();
                 if (boxes == null || boxes.Count == 0)
                 {
                     Pivot = GH_Convert.ToPoint(Pivot);
-                    _contentBox = new RectangleF(Pivot.X, Pivot.Y+ _titleHeight, 80f, 60f);
+                    _contentBox = new RectangleF(Pivot.X, Pivot.Y + _titleHeight, 80f, 60f);
                     _controlBox = new RectangleF(Pivot.X, Pivot.Y, _contentBox.Width, _titleHeight);
                 }
                 else
                 {
-                 
+
                     _contentBox = boxes[0];
-                    for (int i = 1; i < boxes.Count; i++) 
-                        _contentBox = RectangleF.Union(_contentBox, boxes[i]); 
+                    for (int i = 1; i < boxes.Count; i++)
+                        _contentBox = RectangleF.Union(_contentBox, boxes[i]);
                     _contentBox.Inflate(20f, 20f);
                     _logBox = RectangleF.Empty;
-                    var logs = Owner.Log; 
-                    if(logs != null && logs.Any())
+                    var logs = Owner.Log;
+                    if (logs != null && logs.Any())
                     {
                         if (_logFont == null)
                             _logFont = GH_FontServer.NewFont(GH_FontServer.FamilyStandard, 6 / GH_GraphicsUtil.UiScale);
                         var messWidth = _contentBox.Width - 8;
                         var messY = _contentBox.Y;
                         foreach (var log in logs)
-                        { 
+                        {
                             var logSize = GH_FontServer.MeasureString(log.ToString(), _logFont, messWidth);
                             logSize.Width += 2;
                             var logLoc = new PointF(_contentBox.Right - logSize.Width - 4, messY - logSize.Height);
@@ -516,22 +525,22 @@ namespace Tenrec.Components
                     }
 
                     //_logBox = new RectangleF(_contentBox.X+4, _contentBox.Y - msgHgt, _contentBox.Width-8, msgHgt);
-                    
+
                     _contentBox.Y -= 4;
                     _contentBox.Height += 4;
                     var tltHgt = Math.Max(_titleHeight, GH_FontServer.MeasureString(Owner.NickName,
                       GH_FontServer.StandardAdjusted, _contentBox.Width).Height);
                     _controlBox = new RectangleF(_contentBox.X, _contentBox.Y - tltHgt, _contentBox.Width, tltHgt);
-                    _titleBox = new RectangleF(_controlBox.X+4, _controlBox.Y, _controlBox.Width - _buttonHeight * 2-12, tltHgt);
+                    _titleBox = new RectangleF(_controlBox.X + 4, _controlBox.Y, _controlBox.Width - _buttonHeight * 2 - 12, tltHgt);
                     _runBox = new RectangleF(_controlBox.Right - _buttonHeight, _controlBox.Y, _buttonHeight, _buttonHeight);
                     _runBox.Inflate(-4f, -4f);
                     _optBox = _runBox;
-                    _optBox.X -= _buttonHeight;
+                    _optBox.X -= _buttonHeight ;
                 }
                 Bounds = RectangleF.Union(_contentBox, _controlBox);
                 Pivot = Bounds.Location;
             }
-          
+
             protected override void Render(GH_Canvas canvas, Graphics graphics, GH_CanvasChannel channel)
             {
                 if (channel == GH_CanvasChannel.First)
@@ -542,7 +551,7 @@ namespace Tenrec.Components
                         PerformLayout();
                     }
                     var renderText = GH_Canvas.ZoomFadeLow > 0;
-                    if(renderText)
+                    if (renderText)
                         graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
                     var fillColor1 = GetFillColor();
@@ -576,26 +585,26 @@ namespace Tenrec.Components
                                     {
                                         using (var brhLog = new SolidBrush(GetLogColor(l)))
                                         {
-                                            if(_hoverLog == i)
+                                            if (_hoverLog == i)
                                             {
-                                                using(var logFont = GH_FontServer.NewFont(_logFont, FontStyle.Underline))
+                                                using (var logFont = GH_FontServer.NewFont(_logFont, FontStyle.Underline))
                                                     graphics.DrawString(l.ToString(), logFont, brhLog, l.Bounds, sf2);
                                             }
                                             else
                                             {
-                                                graphics.DrawString(l.ToString(), _logFont, brhLog, l.Bounds, sf2); 
+                                                graphics.DrawString(l.ToString(), _logFont, brhLog, l.Bounds, sf2);
                                             }
                                         }
-                                    
+
                                         i++;
                                     }
                                 }
                             }
-                        } 
+                        }
                     }
-                         
+
                     using (var brhControl = style2.CreateBrush(_controlBox, canvas.Viewport.Zoom))
-                    using (var penControl = new Pen(style2.Edge)) 
+                    using (var penControl = new Pen(style2.Edge))
                     {
                         DrawNiceRectangle(graphics, brhControl, penControl, _controlBox);
                         if (renderText)
@@ -607,12 +616,12 @@ namespace Tenrec.Components
                                     graphics.DrawString(Owner.NickName, GH_FontServer.StandardAdjusted, brhTitle, _titleBox, sf);
                             }
 
-                            DrawSeparator(graphics, _controlBox.Right - _titleHeight * 2f - 4f, _controlBox.Y + 3, _controlBox.Bottom - 3, edgeColor1);
+                            DrawSeparator(graphics, _controlBox.Right - _titleHeight * 2f - 2f, _controlBox.Y + 3, _controlBox.Bottom - 3, edgeColor1);
                             DrawRunButton(graphics, edgeColor1);
                             DrawOptionsButton(graphics);
                         }
-                    } 
-                } 
+                    }
+                }
             }
             public Color GetStateColor()
             {
@@ -652,7 +661,7 @@ namespace Tenrec.Components
                 }
                 return GH_GraphicsUtil.BlendColour(color, GH_Skin.palette_normal_standard.Text, 0.5);
             }
-              
+
             private Color GetFillColor()
             {
                 if (Selected)
@@ -691,7 +700,7 @@ namespace Tenrec.Components
             {
                 if (_runBox.IsEmpty)
                     return;
-                var runColor = Owner.ObjectIDs.Count > 0 ? 
+                var runColor = Owner.ObjectIDs.Count > 0 ?
                     (_hoverRunButton ? GH_GraphicsUtil.ScaleColour(Color.YellowGreen, 1.2) : Color.YellowGreen) :
                     (Color.DarkGray);
 
@@ -718,20 +727,25 @@ namespace Tenrec.Components
             }
             private void DrawOptionsButton(Graphics graphics)
             {
-                using (var pen3 = new Pen(Color.Black) { LineJoin = LineJoin.Round })
-                { 
-                    graphics.DrawRectangle(pen3, _optBox.X, _optBox.Y, _optBox.Width, _optBox.Height);
-                }
+                //using (var pen3 = new Pen(Color.Black) { LineJoin = LineJoin.Round })
+                //{
+                //    graphics.DrawRectangle(pen3, _optBox.X, _optBox.Y, _optBox.Width, _optBox.Height);
+                //}
+                graphics.DrawImage(Properties.Resources.settings_20x20, 
+                    new RectangleF(_optBox.X + 0.5f, _optBox.Y+0.5f, _optBox.Width, _optBox.Height));
             }
             private void DrawSeparator(Graphics graphics, float x, float y0, float y1, Color edgeColor)
             {
                 var p0 = new PointF(x, y0);
                 var p1 = new PointF(x, y1);
                 using (var brh = new LinearGradientBrush(p0, p1, Color.Transparent, edgeColor)
-                { Blend = new Blend() { 
-                    Positions = new float[] { 0f, 0.2f, 0.8f, 1f }, 
-                    Factors = new float[] { 0.1f, 1f, 1f, 0.1f }
-                } })
+                {
+                    Blend = new Blend()
+                    {
+                        Positions = new float[] { 0f, 0.2f, 0.8f, 1f },
+                        Factors = new float[] { 0.1f, 1f, 1f, 0.1f }
+                    }
+                })
                 using (var pen = new Pen(brh))
                 {
                     graphics.DrawLine(pen, p0, p1);
@@ -742,17 +756,17 @@ namespace Tenrec.Components
             #region Handlers
             private void OnIgnoreWarnings(object sender, EventArgs args)
             {
-                Owner.IgnoreWarnings = !Owner.IgnoreWarnings;
+                Group_UnitTest.IgnoreWarnings = !Group_UnitTest.IgnoreWarnings;
                 Instances.RedrawCanvas();
             }
             private void OnIgnoreRemarks(object sender, EventArgs args)
             {
-                Owner.IgnoreRemarks = !Owner.IgnoreRemarks;
+                Group_UnitTest.IgnoreRemarks = !Group_UnitTest.IgnoreRemarks;
                 Instances.RedrawCanvas();
             }
             private void OnDisableCanvasMessages(object sender, EventArgs args)
             {
-                Owner.DisableCanvasMessages = !Owner.DisableCanvasMessages;
+                Group_UnitTest.DisableCanvasMessages = !Group_UnitTest.DisableCanvasMessages;
                 CanvasLog.Instance.Clear();
             }
             private void OnSourceCodeGenerator(object sender, EventArgs e)
@@ -762,10 +776,10 @@ namespace Tenrec.Components
                 _form.Show(Grasshopper.Instances.DocumentEditor);
             }
             public static void SetCanvasView(Grasshopper.GUI.Canvas.GH_Canvas canvas, RectangleF region, int length = 100)
-            { 
+            {
                 new Grasshopper.GUI.Canvas.GH_NamedView(canvas.ClientRectangle, region)
                 .SetToViewport(canvas, length);
-            } 
+            }
             #endregion
 
             #region Interaction
@@ -774,8 +788,8 @@ namespace Tenrec.Components
             private int _hoverLog = -1;
             private UI.UnitTestsSourceCodeGeneratorForm _form;
             public override GH_ObjectResponse RespondToMouseDown(GH_Canvas sender, GH_CanvasMouseEvent e)
-            { 
-                if(e.Button == MouseButtons.Left)
+            {
+                if (e.Button == MouseButtons.Left)
                 {
                     if (_hoverTitle)
                     {
@@ -787,9 +801,9 @@ namespace Tenrec.Components
                         if (_optBox.Contains(e.CanvasLocation))
                         {
                             var menu = new ContextMenu();
-                            menu.MenuItems.Add(Owner.IgnoreWarnings ? "Include warnings" : "Ignore warnings", OnIgnoreWarnings);
-                            menu.MenuItems.Add(Owner.IgnoreRemarks ? "Include remarks" : "Ignore remarks", OnIgnoreRemarks);
-                            menu.MenuItems.Add(Owner.DisableCanvasMessages ? "Enable canvas messages" : "Disable canvas messages", OnDisableCanvasMessages);
+                            menu.MenuItems.Add(Group_UnitTest.IgnoreWarnings ? "Include warnings" : "Ignore warnings", OnIgnoreWarnings);
+                            menu.MenuItems.Add(Group_UnitTest.IgnoreRemarks ? "Include remarks" : "Ignore remarks", OnIgnoreRemarks);
+                            menu.MenuItems.Add(Group_UnitTest.DisableCanvasMessages ? "Enable canvas messages" : "Disable canvas messages", OnDisableCanvasMessages);
                             menu.MenuItems.Add("Source Code Generator", OnSourceCodeGenerator);
                             menu.Show(sender, e.ControlLocation);
                             return GH_ObjectResponse.Handled;
@@ -804,7 +818,7 @@ namespace Tenrec.Components
                                 if (log.Bounds.Contains(e.CanvasLocation))
                                 {
                                     sender.Document.DeselectAll();
-                                    log.Object.Attributes.Selected = true; 
+                                    log.Object.Attributes.Selected = true;
                                     SetCanvasView(sender, log.Object.Attributes.Bounds, 200);
                                     sender.Invalidate();
                                     return GH_ObjectResponse.Handled;
@@ -812,26 +826,25 @@ namespace Tenrec.Components
                             }
                         }
                     }
-                }  
-                return base.RespondToMouseDown(sender, e); 
+                }
+                return base.RespondToMouseDown(sender, e);
             }
-
             public override GH_ObjectResponse RespondToMouseMove(GH_Canvas sender, GH_CanvasMouseEvent e)
             {
                 _hoverTitle = e.CanvasY - Bounds.Y < _controlBox.Height;
-                if(_hoverLog > -1)
+                if (_hoverLog > -1)
                 {
                     _hoverLog = -1;
                     sender.Invalidate();
                 }
-             
+
                 if (_hoverTitle)
-                { 
+                {
                     _hoverRunButton = Owner.ObjectIDs.Count > 0 && _runPath != null && _runPath.IsVisible(e.CanvasLocation);
                     sender.Invalidate();
                 }
-               
-                if (GH_Canvas.ZoomFadeLow > 0  && _logBox.Contains(e.CanvasLocation))
+
+                if (GH_Canvas.ZoomFadeLow > 0 && _logBox.Contains(e.CanvasLocation))
                 {
                     var i = 0;
                     foreach (var log in Owner.Log)
@@ -853,7 +866,7 @@ namespace Tenrec.Components
             }
             public override GH_ObjectResponse RespondToMouseDoubleClick(GH_Canvas sender, GH_CanvasMouseEvent e)
             {
-                if(e.Button == MouseButtons.Left)
+                if (e.Button == MouseButtons.Left)
                 {
                     if (_titleBox.Contains(e.CanvasLocation))
                     {
@@ -864,11 +877,11 @@ namespace Tenrec.Components
                     //{
                     //    CreatePanel(sender.Document);
                     //}
-                  
+
                 }
                 return base.RespondToMouseDoubleClick(sender, e);
             }
- 
+
             private bool ShowCanvasTitleTextBox(GH_Canvas canvas)
             {
                 var rec = RectangleF.Intersect(canvas.Viewport.VisibleRegion, _controlBox);
@@ -879,7 +892,7 @@ namespace Tenrec.Components
                 if (a.Width < 60 || a.Height < _buttonHeight)
                     return false;
                 var tb = new TextBox();
-                tb.SetBounds(a.X, a.Y, a.Width+1, a.Height+1);
+                tb.SetBounds(a.X, a.Y, a.Width + 1, a.Height + 1);
                 tb.BorderStyle = BorderStyle.FixedSingle;
                 tb.Multiline = true;
                 tb.BackColor = Color.FromArgb(255, GetFillColor());
@@ -939,50 +952,6 @@ namespace Tenrec.Components
             #endregion
 
         }
-
-    }
-     
-    public class Comp_Assert : GH_Component 
-    {
-        #region Properties
-        protected override Bitmap Icon => null;
-        public override Guid ComponentGuid => new Guid("0a2b53e4-3d49-49b3-a8e4-92b7d2da382a");
-        public override GH_Exposure Exposure => GH_Exposure.tertiary; 
-        #endregion
-
-        #region Constructors 
-        public Comp_Assert() : base("Assert", "Assert",
-            "Ensure that a condition is met or throw an error.", "Params", "Util") { }
-        #endregion
-
-        #region Methods
-        protected override void RegisterInputParams(GH_InputParamManager pManager)
-        {
-            pManager.AddBooleanParameter("Assert", "A", "True if the condition has been met", GH_ParamAccess.item);
-            pManager.AddTextParameter("Message", "M", "Assert messsage", GH_ParamAccess.item);
-            Params.Input[1].Optional = true;
-        }
-
-        protected override void RegisterOutputParams(GH_OutputParamManager pManager){ }
-
-        protected override void SolveInstance(IGH_DataAccess DA)
-        {
-            bool valid = false;
-            string message = string.Empty;
-            if (!DA.GetData(0, ref valid))
-                return;
-
-            if (!DA.GetData(1, ref message) && !valid)
-                message = $"{NickName} failed.";
-             
-            if(!valid || !string.IsNullOrEmpty(message))
-            {
-                var level = valid ? GH_RuntimeMessageLevel.Remark : GH_RuntimeMessageLevel.Error;
-                AddRuntimeMessage(level, message);
-            }
-        }
-         
-        #endregion
 
     }
 

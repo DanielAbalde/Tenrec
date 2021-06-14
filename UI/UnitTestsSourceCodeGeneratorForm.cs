@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Tenrec.UI
@@ -111,7 +105,7 @@ namespace Tenrec.UI
             var outputName = GetOutputName();
             var language = GetLanguage();
             var framework = GetFramework(); 
-            textBoxLog.Text = Utils.CreateAutoTestSourceFile(folderFiles, outputFolder, outputName, language, framework);
+            textBoxLog.Text = Generator.CreateAutoTestSourceFile(folderFiles, outputFolder, outputName, language, framework);
             if (textBoxLog.Text.Contains("successfully"))
                 textBoxLog.ForeColor = Grasshopper.GUI.GH_GraphicsUtil.BlendColour(Color.Green, Color.Black, 0.5);
             else
