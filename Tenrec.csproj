@@ -117,7 +117,10 @@
     <None Include="Resources\test_24x24.png" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include=".git\captureTenrecGroup.png" />
+    <Content Include="Resources\captureTenrecGroup.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include=".git\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
