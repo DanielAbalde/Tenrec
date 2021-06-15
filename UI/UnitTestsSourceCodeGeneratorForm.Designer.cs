@@ -44,18 +44,18 @@ namespace Tenrec.UI
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.comboBoxFramework = new System.Windows.Forms.ComboBox();
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox4.SuspendLayout();
-            this.tableLayoutPanel1.SuspendLayout();
             this.groupBox5.SuspendLayout();
-            this.tableLayoutPanel2.SuspendLayout();
             this.groupBox6.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
+            this.tableLayoutPanel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // textBoxFiles
@@ -207,6 +207,30 @@ namespace Tenrec.UI
             this.toolTip1.SetToolTip(this.comboBoxFramework, "Unit Test framework");
             this.comboBoxFramework.SelectedIndexChanged += new System.EventHandler(this.comboBoxFramework_SelectedIndexChanged);
             // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.textBoxName);
+            this.groupBox5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox5.Location = new System.Drawing.Point(3, 166);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(402, 40);
+            this.groupBox5.TabIndex = 7;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "Output name";
+            this.toolTip1.SetToolTip(this.groupBox5, "Name of the source code file");
+            // 
+            // groupBox6
+            // 
+            this.groupBox6.Controls.Add(this.textBoxLog);
+            this.groupBox6.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox6.Location = new System.Drawing.Point(3, 303);
+            this.groupBox6.Name = "groupBox6";
+            this.groupBox6.Size = new System.Drawing.Size(402, 59);
+            this.groupBox6.TabIndex = 9;
+            this.groupBox6.TabStop = false;
+            this.groupBox6.Text = "Log";
+            this.toolTip1.SetToolTip(this.groupBox6, "Output info");
+            // 
             // tableLayoutPanel1
             // 
             this.tableLayoutPanel1.ColumnCount = 2;
@@ -222,18 +246,6 @@ namespace Tenrec.UI
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(408, 45);
             this.tableLayoutPanel1.TabIndex = 7;
-            // 
-            // groupBox5
-            // 
-            this.groupBox5.Controls.Add(this.textBoxName);
-            this.groupBox5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox5.Location = new System.Drawing.Point(3, 166);
-            this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(402, 40);
-            this.groupBox5.TabIndex = 7;
-            this.groupBox5.TabStop = false;
-            this.groupBox5.Text = "Output name";
-            this.toolTip1.SetToolTip(this.groupBox5, "Name of the source code file");
             // 
             // tableLayoutPanel2
             // 
@@ -260,18 +272,6 @@ namespace Tenrec.UI
             this.tableLayoutPanel2.Size = new System.Drawing.Size(408, 365);
             this.tableLayoutPanel2.TabIndex = 10;
             // 
-            // groupBox6
-            // 
-            this.groupBox6.Controls.Add(this.textBoxLog);
-            this.groupBox6.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox6.Location = new System.Drawing.Point(3, 303);
-            this.groupBox6.Name = "groupBox6";
-            this.groupBox6.Size = new System.Drawing.Size(402, 59);
-            this.groupBox6.TabIndex = 9;
-            this.groupBox6.TabStop = false;
-            this.groupBox6.Text = "Log";
-            this.toolTip1.SetToolTip(this.groupBox6, "Output info");
-            // 
             // UnitTestsSourceCodeGeneratorForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -284,18 +284,20 @@ namespace Tenrec.UI
             this.ShowInTaskbar = false;
             this.Text = "Unit Test Source Code Generator";
             this.TopMost = true;
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.UnitTestsSourceCodeGeneratorForm_FormClosed);
+            this.Load += new System.EventHandler(this.UnitTestsSourceCodeGeneratorForm_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             this.groupBox4.ResumeLayout(false);
-            this.tableLayoutPanel1.ResumeLayout(false);
             this.groupBox5.ResumeLayout(false);
             this.groupBox5.PerformLayout();
-            this.tableLayoutPanel2.ResumeLayout(false);
             this.groupBox6.ResumeLayout(false);
             this.groupBox6.PerformLayout();
+            this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

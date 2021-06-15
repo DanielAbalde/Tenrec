@@ -97,7 +97,25 @@ namespace Tenrec.UI
         }
         #endregion
 
-        #region Handlers
+        #region Handlers 
+        private void UnitTestsSourceCodeGeneratorForm_Load(object sender, EventArgs e)
+        {
+            var activeDoc = Grasshopper.Instances.ActiveCanvas?.Document;
+            if(activeDoc != null && !string.IsNullOrEmpty(activeDoc.FilePath))
+            {
+                textBoxFiles.Text = System.IO.Path.GetDirectoryName(activeDoc.FilePath);
+            }
+            textBoxOutputFolder.Text = Grasshopper.Instances.Settings.GetValue("Tenrec.OutputFolder", string.Empty);
+            textBoxName.Text = Grasshopper.Instances.Settings.GetValue("Tenrec.OutputName", "TenrecAutomaticTests");
+            Focus();
+        }
+
+        private void UnitTestsSourceCodeGeneratorForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Grasshopper.Instances.Settings.SetValue("Tenrec.OutputFolder", textBoxOutputFolder.Text);
+            Grasshopper.Instances.Settings.SetValue("Tenrec.OutputName", textBoxName.Text);
+        }
+
         private void buttonGenerate_Click(object sender, EventArgs e)
         {
             var folderFiles = GetFileFolders();
@@ -132,7 +150,8 @@ namespace Tenrec.UI
         private void comboBoxFramework_SelectedIndexChanged(object sender, EventArgs e)
         {
             UpdateState();
-        } 
-        #endregion 
+        }
+        #endregion
+
     }
 }
