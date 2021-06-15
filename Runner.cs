@@ -98,7 +98,7 @@ namespace Tenrec
         /// <param name="group">The <see cref="Group_UnitTest"/> containing the objects to evaluate.</param>
         /// <param name="log">The output messages.</param>
         /// <returns>Resulting unit test state.</returns>
-        public static UnitTestState EvaluateGroup(Grasshopper.Kernel.Special.GH_Group group, TestContext context, out List<ObjectMessage> log)
+        private static UnitTestState EvaluateGroup(Grasshopper.Kernel.Special.GH_Group group, TestContext context, out List<ObjectMessage> log)
         {
             var state = UnitTestState.Untested;
             log = new List<ObjectMessage>();
@@ -222,7 +222,7 @@ namespace Tenrec
         /// <param name="filePath">The file path.</param>
         /// <param name="doc">The resulting Grasshopper document.</param>
         /// <returns>True if the file could be opened, false otherwise.</returns>
-        public static bool OpenDocument(string filePath, TestContext context, out Grasshopper.Kernel.GH_Document doc)
+        private static bool OpenDocument(string filePath, TestContext context, out Grasshopper.Kernel.GH_Document doc)
         { 
             //var io = new GH_DocumentIO();
             //if (!io.Open(filePath))

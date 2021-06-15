@@ -28,13 +28,13 @@ namespace Tenrec
         public static string CreateAutoTestSourceFile(string[] ghTestFolders,
             string outputFolder, string outputName = "TenrecGeneratedTests",
             string language = "cs", string testFramework = "mstest")
-        { 
+        {
             var log = new StringBuilder();
             var sb = new StringBuilder();
             var exits = false;
             var fileName = string.Empty;
             try
-            { 
+            {
                 if (ghTestFolders == null && ghTestFolders.Length == 0)
                     throw new ArgumentNullException(nameof(outputFolder));
                 if (string.IsNullOrEmpty(outputFolder))
@@ -55,7 +55,7 @@ namespace Tenrec
                     {
                         foreach (var file in files)
                         {
-                            if (Runner.OpenDocument(file, null, out GH_Document doc))
+                            if (OpenDocument(file, out GH_Document doc))
                             {
                                 var groups = new List<IGH_DocumentObject>();
                                 foreach (var obj in doc.Objects)
@@ -77,7 +77,7 @@ namespace Tenrec
                                     {
                                         sb.AppendLine("        [TestMethod]");
                                         sb.AppendLine($"        public void {CodeableNickname(group.NickName)}()");
-                                        sb.AppendLine("        {"); 
+                                        sb.AppendLine("        {");
                                         sb.AppendLine($"            Tenrec.Runner.Initialize(TestContext);");
                                         sb.AppendLine($"            Tenrec.Runner.RunTenrecGroup(FilePath, new System.Guid(\"{group.InstanceGuid}\"), TestContext);");
                                         sb.AppendLine("        }");
@@ -115,6 +115,19 @@ namespace Tenrec
         private static string CodeableNickname(string nickname)
         {
             return nickname.Replace(" ", "_");
+        }
+
+        private static bool OpenDocument(string filePath, out GH_Document doc)
+        {
+            var io = new GH_DocumentIO();
+            if (!io.Open(filePath))
+            {
+                doc = null;
+                throw new Exception($"Failed to open file: {filePath}");
+            }
+            doc = io.Document;
+            doc.Enabled = true;
+            return true;
         }
     }
 }
