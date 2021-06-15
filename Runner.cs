@@ -223,16 +223,7 @@ namespace Tenrec
         /// <param name="doc">The resulting Grasshopper document.</param>
         /// <returns>True if the file could be opened, false otherwise.</returns>
         private static bool OpenDocument(string filePath, TestContext context, out Grasshopper.Kernel.GH_Document doc)
-        { 
-            //var io = new GH_DocumentIO();
-            //if (!io.Open(filePath))
-            //{
-            //    doc = null;
-            //    throw new Exception($"Failed to open file: {filePath}");
-            //} 
-            //doc = io.Document;
-            //doc.Enabled = true;
-
+        {  
             if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentNullException(nameof(filePath));
 
