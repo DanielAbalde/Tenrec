@@ -120,6 +120,8 @@ namespace Tenrec.UI
                 }
                 _itemsToAdd.Clear();
             }
+            if (sender.Graphics == null)
+                return;
             var xf = sender.Graphics.Transform;
             sender.Graphics.ResetTransform();
             sender.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
